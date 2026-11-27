@@ -9,6 +9,8 @@
     "start": "node --env-file-if-exists=.env server/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --test server/*.test.ts",
+    "test:browser-fixture": "node scripts/browser-fixture.ts",
+    "test:live": "node --env-file-if-exists=.env scripts/live-acceptance.ts",
     "fmt": "oxfmt --write .",
     "fmt:check": "oxfmt --check .",
     "lint": "oxlint .",

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 小明智能体任务 API
-  version: 1.0.0
+  version: 1.1.0
 servers:
   - url: http://127.0.0.1:3000
 paths:
@@ -30,6 +30,8 @@ paths:
               required: [title]
               properties:
                 title: { $ref: "#/components/schemas/Title" }
+                description: { type: string, maxLength: 2000 }
+                dueDate: { type: [string, "null"], format: date }
       responses:
         "201":
           description: 新建的任务
@@ -42,6 +44,11 @@ paths:
       - name: id
         in: path
         required: true
+        schema: { type: string }
+      - name: If-Match
+        in: header
+        required: false
+        description: 可选乐观锁；值为原任务 JSON 的 SHA-256 十六进制摘要，外加双引号。服务端算法见 task-version.ts。
         schema: { type: string }
     patch:
       operationId: updateTask
@@ -57,6 +64,8 @@ paths:
               properties:
                 title: { $ref: "#/components/schemas/Title" }
                 done: { type: boolean }
+                description: { type: string, maxLength: 2000 }
+                dueDate: { type: [string, "null"], format: date }
       responses:
         "200":
           description: 更新后的任务
@@ -65,6 +74,7 @@ paths:
               schema: { $ref: "#/components/schemas/Task" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "412": { $ref: "#/components/responses/PreconditionFailed" }
     delete:
       operationId: deleteTask
       summary: 删除一条任务
@@ -72,6 +82,7 @@ paths:
         "204":
           description: 删除成功，响应体为空
         "404": { $ref: "#/components/responses/NotFound" }
+        "412": { $ref: "#/components/responses/PreconditionFailed" }
 components:
   schemas:
     Title:
@@ -86,12 +97,22 @@ components:
         id: { type: string, format: uuid }
         title: { $ref: "#/components/schemas/Title" }
         done: { type: boolean }
+        description: { type: string, maxLength: 2000 }
+        dueDate:
+          type: [string, "null"]
+          format: date
+          description: 可选到期日期；null 表示取消日期，不支持时刻或自动提醒
     Error:
       type: object
       required: [error]
       properties:
         error: { type: string }
   responses:
+    PreconditionFailed:
+      description: 任务在读取后已变更，本次未写入
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
     BadRequest:
       description: 请求字段无效
       content:

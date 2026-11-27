@@ -15,17 +15,21 @@ export default function App() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const input = useRef<HTMLTextAreaElement>(null);
+  const attempt = useRef<{ body: string; id: string } | undefined>(undefined);
 
   async function send(text: string) {
     const content = text.trim();
     if (!content || pending) return;
     const outgoing: ChatMessage[] = [...messages, { role: "user", content }];
+    const body = JSON.stringify(outgoing);
+    if (attempt.current?.body !== body) attempt.current = { body, id: crypto.randomUUID() };
     setMessages(outgoing);
     setDraft("");
     setPending(true);
     setError("");
     try {
-      const answer = await requestReply(outgoing);
+      const answer = await requestReply(outgoing, attempt.current.id);
+      attempt.current = undefined;
       setMessages([...outgoing, { role: "assistant", content: answer }]);
     } catch (cause) {
       setMessages(messages);
